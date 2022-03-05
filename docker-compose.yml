@@ -31,7 +31,7 @@ services:
 
   delivery-service:
     container_name: delivery-service
-    image: delivery-service/latest
+    image: delivery-service:latest
     command: bash -c "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
     restart: always
     ports:
@@ -57,7 +57,7 @@ services:
 
   wallet-service:
     container_name: wallet-service
-    image: wallet-service/latest
+    image: wallet-service:latest
     restart: always
     ports:
       - 3002:3002
@@ -80,7 +80,7 @@ services:
 
   main-service:
     container_name: main-service
-    image: main-service/latest
+    image: main-service:latest
     labels:
     - "traefik.enable=true"
     - "traefik.http.routers.main-service.rule=Host(`localhost`)"
