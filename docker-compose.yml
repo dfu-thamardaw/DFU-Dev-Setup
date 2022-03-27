@@ -10,10 +10,18 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+      #- "--certificatesresolvers.myresolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
+      - "--certificatesresolvers.myresolver.acme.email=thuhtetaung.d2@gmail.com"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
     ports:
       - "80:80"
+      - "443:443"
       - "8080:8080"
     volumes:
+      - "./letsencrypt:/letsencrypt"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
 
   delivery-service-db:
@@ -83,8 +91,9 @@ services:
     image: main-service:latest
     labels:
     - "traefik.enable=true"
-    - "traefik.http.routers.main-service.rule=Host(`localhost`)"
-    - "traefik.http.routers.main-service.entrypoints=web"
+    - "traefik.http.routers.main-service.rule=Host(`devapi.dfumm.com`)"
+    - "traefik.http.routers.main-service.entrypoints=websecure"
+    - "traefik.http.routers.main-service.tls.certresolver=myresolver"
     ports:
       - 3001:3001
     depends_on:
