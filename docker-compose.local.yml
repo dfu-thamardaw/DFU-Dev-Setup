@@ -1,0 +1,109 @@
+version: "3.9"
+
+services:
+  traefik:
+    image: "traefik:v2.6"
+    container_name: "traefik"
+    command:
+      #- "--log.level=DEBUG"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - "./letsencrypt:/letsencrypt"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+
+  delivery-service-db:
+    image: postgres:13-alpine
+    container_name: delivery-service-db
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=DFU
+
+  delivery-service:
+    container_name: delivery-service
+    image: delivery-service:latest
+    command: bash -c "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+    restart: always
+    ports:
+      - 8001:8000
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@delivery-service-db:5432/DFU
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=DFU
+      - POSTGRES_SERVER=db
+      - POSTGRES_PORT=5432
+    depends_on:
+      - delivery-service-db
+
+  wallet-service-db:
+    container_name: wallet-service-db
+    image: mongo:latest
+    restart: always
+    ports: 
+      - 27018:27017
+    volumes: 
+      - wallet_mongo_data:/data/db
+
+  wallet-service:
+    container_name: wallet-service
+    image: wallet-service:latest
+    restart: always
+    ports:
+      - 3002:3002
+    depends_on:
+      - wallet-service-db
+    environment:
+      - NODE_ENV=development
+      - PORT=3002
+      - SECRET=qwevioadjfalfajfadskfjvn
+      - DATABASE_URL=mongodb://wallet-service-db:27017/wrapper
+
+  main-service-db:
+    container_name: main-service-db
+    image: mongo:latest
+    restart: always
+    ports: 
+      - 27017:27017
+    volumes: 
+      - main_mongo_data:/data/db
+
+  main-service:
+    container_name: main-service
+    image: main-service:latest
+    labels:
+    - "traefik.enable=true"
+    - "traefik.http.routers.main-service.rule=Host(`localhost`)"
+    - "traefik.http.routers.main-service.entrypoints=web"
+    ports:
+      - 3001:3001
+    depends_on:
+      - delivery-service
+      - wallet-service
+    environment:
+      - USER_DB_URL=mongodb://main-service-db:27017
+      - USER_DB_NAME=users
+      - SECRET=awerjlsdfjlaj
+      - API_ROOT=/api/v1
+      - DELIVERY_SERVICE=http://delivery-service:8000
+      - WALLET_SERVICE=http://wallet-service:3002
+      - PORT=3001
+      - ADMIN_USERNAME=ADMIN
+      - ADMIN_PASSWORD=ADMIN
+
+volumes:
+  wallet_mongo_data:
+  main_mongo_data:
+  postgres_data:
