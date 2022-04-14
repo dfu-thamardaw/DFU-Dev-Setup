@@ -29,7 +29,7 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=DFU
+      - POSTGRES_DB=dfu
 
   delivery-service:
     container_name: delivery-service
@@ -39,10 +39,10 @@ services:
     ports:
       - 8001:8000
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@delivery-service-db:5432/DFU
+      - DATABASE_URL=postgresql://postgres:postgres@delivery-service-db:5432/dfu
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=DFU
+      - POSTGRES_DB=dfu
       - POSTGRES_SERVER=db
       - POSTGRES_PORT=5432
     depends_on:
